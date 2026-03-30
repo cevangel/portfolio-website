@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <title>Nothing  max</title>
+    
+
+  </head>
+    
+  <body>
+  <div class="app" id="app">
+  <div class="bg bg1"></div>
+  <div class="bg bg2"></div>
+
+  <div class="card">
+    <div class="eyebrow">STILLNESS PULL</div>
+    <h1>Do Nothing Gacha</h1>
+    <p class="sub">Check in, stay still, and collect rare spirits.</p>
+
+    <!-- Stats Section -->
+    <div class="stats-grid">
+      <div class="stat-box">
+        <div class="stat-label">Total Time Today</div>
+        <div class="stat-value" id="todayTime">0m 0s</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Sessions</div>
+        <div class="stat-value" id="todaySessions">0</div>
+      </div>
+    </div>
+
+    <!-- Setup Section -->
+    <div class="section">
+      <div class="section-title">Before Timer</div>
+      
+      <label class="field">
+        <span>Why are you doing nothing?</span>
+        <select id="reason">
+          <option value="overwhelmed">I'm overwhelmed / anxious</option>
+          <option value="avoidance">I'm avoiding something</option>
+          <option value="bored">I'm bored / overstimulated</option>
+          <option value="reset">I need a reset</option>
+          <option value="emotional">I'm emotionally activated</option>
+        </select>
+      </label>
+
+      <div class="quote-box" id="quoteBox">"Pause first..."</div>
+
+  
+
+      <label class="field">
+        <span>Distress (SUDs 0-10) Distracted? Anxious?</span>
+        <input id="beforeSuds" type="range" min="0" max="10" value="5" />
+        <div class="range-readout"><span id="beforeSudsValue">5</span>/10</div>
+      </label>
+
+      <label class="field">
+        <span>Current Feeling and Other Notes</span>
+      </label>
+
+        <select id="postReason">
+          <option value="10">10 Hospital pls</option>
+          <option value="9">9</option>
+          <option value="8">8 Very bad, Can't focus</option>
+          <option value="7">7 Bad enough to interfere</option>
+          <option value="6">6</option>
+          <option value="5">5 Mod uncomfortable, but can perform</option>
+          <option value="4">4</option>
+          <option value="3">3 Mild with no interference</option>     
+          <option value="2">2</option>
+          <option value="1">1 Concentrating well </option>
+          <option value="0">0 Totaly relaxed</option>
+        </select>
+
+      </label>
+
+    
+
+      </label>
+
+      
+
+
+
+      <label class="field">
+
+        <span>Before feeling (Remember HALT)</span>
+
+        <input id="beforeFeeling" type="text" placeholder="frazzled, tight, restless..." />
+
+      </label>
+
+
+      <label class="field">
+
+        <span>Optional note before (Remember to schedule and breakdown tasks</span>
+
+        <textarea id="beforeNote" rows="4" placeholder="What's going on?" ></textarea>
+
+      </label>
+      <div class="row two">
+        <label class="field">
+          <span>Minutes</span>
+          <input id="minutes" type="number" min="0" max="60" value="1" />
+        </label>
+        <label class="field">
+          <span>Seconds</span>
+          <input id="seconds" type="number" min="0" max="59" value="0" />
+        </label>
+      </div>
+      <!-- Added hidden field for the note the JS looks for -->
+      <input type="hidden" id="beforeNote" value="" />
+    </div>
+
+    <!-- Buddy panel -->
+    <div class="buddy-panel">
+      <div class="buddy-visual">
+        <img id="buddyImg" class="buddy-img" src="assets/spongebobNothing.png" alt="SpongeBob doing nothing" width="240" height="240" />
+      </div>
+      <div class="buddy-copy">
+        <div class="buddy-text" id="buddyText">Waiting to start...</div>
+        <p class="buddy-reminder" id="buddyReminder" aria-live="polite"></p>
+      </div>
+    </div>
+
+    <!-- Timer Circle -->
+    <div class="timer-wrap">
+      <div class="ring">
+        <svg viewBox="0 0 120 120" class="progress-svg">
+          <circle cx="60" cy="60" r="52" class="track"></circle>
+          <circle cx="60" cy="60" r="52" class="progress" id="progressCircle"></circle>
+        </svg>
+        <div class="time" id="timeDisplay">01:00</div>
+      </div>
+    </div>
+
+    <div class="status" id="statusText">Press Start, then leave the screen alone.</div>
+
+    <div class="button-row">
+      <button id="startBtn" class="btn primary">Start Pull</button>
+      <button id="resetBtn" class="btn ghost">Reset</button>
+    </div>
+
+    <!-- Journal Section -->
+    <div class="section">
+      <div class="section-title">Recent History</div>
+      <div id="journalList" class="journal-list"></div>
+    </div>
+  </div>
+
+  <!-- SUCCESS OVERLAY (Gacha Pull & Post-Checkin) -->
+  <div class="overlay hidden" id="successOverlay">
+    <div class="success-card">
+      <div class="success-title">Congratulations! You did nothing!</div>
+      <div class="success-sub">You stuck with it. Here&rsquo;s your pull.</div>
+
+      <div class="capsule-wrap">
+        <div class="capsule glow" id="capsule">?</div>
+      </div>
+
+      <div class="reward-card hidden" id="rewardCard">
+        <div class="reward-rarity" id="rewardRarity">COMMON</div>
+        <div class="reward-name" id="rewardName">...</div>
+        <div class="reward-desc" id="rewardDesc">...</div>
+      </div>
+
+      <div class="section after-section">
+        <div class="section-title">Post-Checkin</div>
+        <label class="field">
+          <span>New SUDs Level (0-10)</span>
+          <input id="afterSuds" type="range" min="0" max="10" value="3" />
+          <div class="range-readout"><span id="afterSudsValue">3</span>/10</div>
+        </label>
+        <label class="field">
+          <span>How do you feel now? Less distracted/anxious/etc?</span>
+          <input id="afterFeeling" type="text" placeholder="Lighter, calmer..." />
+        </label>
+        <label class="field">
+          <span>Note for yourself</span>
+          <textarea id="afterNote" placeholder="Any insights?" rows="2"></textarea>
+        </label>
+      </div>
+
+      <div class="button-row overlay-buttons">
+        <button id="saveEntryBtn" class="btn primary">Save & Collect</button>
+        <button id="closeOverlayBtn" class="btn ghost">Just Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="failBeatupOverlay">
+    <div class="fail-beatup-card">
+      <img class="fail-beatup-img" src="assets/spongePatBeatup.webp" alt="" width="320" height="240" />
+      <p class="fail-beatup-caption">Oh no! Spongebob and Patrick GOT BEAT UP because of you!</p>
+      <button type="button" class="btn primary" id="dismissFailBeatupBtn">OK</button>
+    </div>
+  </div>
+
+  <div id="particles"></div>
+  <div id="toast" class="toast hidden">Interaction detected — timer failed</div>
+</div>
+</div>
+<style>
+  :root{
+    --bg1:#0b1020;
+    --bg2:#151d39;
+    --card:rgba(18,25,48,.78);
+    --line:rgba(255,255,255,.1);
+    --text:#f7f8ff;
+    --muted:#bfc8f3;
+    --accent:#7c5cff;
+    --accent2:#00dbff;
+    --accent3:#ffe066;
+    --good:#79ffb1;
+    --bad:#ff6b88;
+    --shadow:0 20px 60px rgba(0,0,0,.34);
+  }
+
+  * { box-sizing:border-box; }
+  html, body {
+    margin:0;
+    min-height:100%;
+    background: linear-gradient(160deg, var(--bg1), var(--bg2));
+    color:var(--text);
+    font-family: Inter, system-ui, -apple-system, Segoe UI, sans-serif;
+  }
+
+  body.shake {
+    animation: shake .45s ease-in-out;
+  }
+
+  .app {
+    min-height:100vh;
+    padding:24px;
+    position:relative;
+    overflow:hidden;
+    display:grid;
+    place-items:center;
+  }
+
+  .bg {
+    position:absolute;
+    border-radius:50%;
+    filter:blur(40px);
+    opacity:.25;
+    pointer-events:none;
+  }
+
+  .bg1 {
+    width:260px; height:260px;
+    background:radial-gradient(circle, rgba(124,92,255,.95), transparent 70%);
+    top:5%; left:4%;
+  }
+
+  .bg2 {
+    width:320px; height:320px;
+    background:radial-gradient(circle, rgba(0,219,255,.85), transparent 70%);
+    right:3%; bottom:8%;
+  }
+
+  .card {
+    position:relative;
+    z-index:2;
+    width:min(100%, 620px);
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:28px;
+    box-shadow:var(--shadow);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    padding:22px;
+  }
+
+  .eyebrow {
+    font-size:12px;
+    font-weight:800;
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    color:var(--accent3);
+    margin-bottom:8px;
+  }
+
+  h1 {
+    margin:0 0 8px;
+    font-size:clamp(30px,5vw,42px);
+    line-height:.96;
+  }
+
+  .sub {
+    margin:0 0 18px;
+    color:var(--muted);
+    line-height:1.45;
+  }
+
+  .section {
+    margin-top:16px;
+    padding:14px;
+    border-radius:18px;
+    background:rgba(255,255,255,.04);
+    border:1px solid rgba(255,255,255,.08);
+  }
+
+  .section-title {
+    font-size:12px;
+    font-weight:800;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--accent3);
+    margin-bottom:12px;
+  }
+
+  .stats-grid {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+    margin-bottom:14px;
+  }
+
+  .stat-box {
+    background:rgba(255,255,255,.05);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:18px;
+    padding:14px;
+  }
+
+  .stat-label {
+    font-size:12px;
+    color:var(--muted);
+    margin-bottom:6px;
+    font-weight:700;
+  }
+
+  .stat-value {
+    font-size:24px;
+    font-weight:900;
+  }
+
+  .row.two {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+  }
+
+  .field {
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    margin-bottom:12px;
+  }
+
+  .field span {
+    font-size:13px;
+    color:var(--muted);
+    font-weight:700;
+  }
+
+  input, select, textarea {
+    width:100%;
+    border:none;
+    outline:none;
+    background:rgba(255,255,255,.08);
+    color:var(--text);
+    border-radius:14px;
+    padding:12px 14px;
+    border:1px solid rgba(255,255,255,.08);
+    font-size:15px;
+  }
+
+  select option { color:#111; }
+
+  textarea { resize:vertical; }
+
+  .range-readout {
+    font-size:13px;
+    color:var(--accent3);
+    font-weight:800;
+    margin-top:-4px;
+  }
+
+  .buddy-panel {
+    margin-top:16px;
+    padding:14px;
+    border-radius:20px;
+    background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+    border:1px solid rgba(255,255,255,.08);
+    display:grid;
+    justify-items:center;
+    gap:8px;
+  }
+
+  .buddy-visual {
+    width:100%;
+    max-width:min(260px, 100%);
+    border-radius:18px;
+    overflow:hidden;
+    border:1px solid rgba(255,255,255,.1);
+    background:rgba(0,0,0,.2);
+  }
+
+  .buddy-img {
+    display:block;
+    width:100%;
+    height:auto;
+  }
+
+  .fail-beatup-card {
+    width:min(100%, 400px);
+    background:rgba(22,28,56,.96);
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:26px;
+    box-shadow:0 20px 70px rgba(0,0,0,.45);
+    padding:20px;
+    text-align:center;
+    animation:popIn .45s ease;
+  }
+
+  .fail-beatup-img {
+    width:100%;
+    max-height:min(45vh, 280px);
+    object-fit:contain;
+    border-radius:16px;
+    display:block;
+    margin:0 auto 14px;
+  }
+
+  .fail-beatup-caption {
+    margin:0 0 16px;
+    font-size:clamp(15px, 3.8vw, 18px);
+    font-weight:800;
+    line-height:1.45;
+    color:var(--text);
+  }
+
+  .buddy-wrap {
+    width:170px;
+    height:150px;
+    display:grid;
+    place-items:center;
+  }
+
+  .buddy {
+    width:150px;
+    height:135px;
+    position:relative;
+  }
+
+  .buddy-shadow {
+    position:absolute;
+    left:34px;
+    bottom:13px;
+    width:78px;
+    height:16px;
+    border-radius:50%;
+    background:rgba(0,0,0,.24);
+    filter:blur(5px);
+    animation: breathShadow 3.2s ease-in-out infinite;
+  }
+
+  .chair {
+    position:absolute;
+    left:42px;
+    bottom:18px;
+    width:68px;
+    height:66px;
+  }
+
+  .chair-back, .chair-seat, .chair-leg {
+    position:absolute;
+    background:#c7d0ff80;
+    border-radius:10px;
+  }
+
+  .chair-back { left:8px; top:0; width:10px; height:38px; }
+  .chair-seat { left:8px; top:33px; width:40px; height:10px; }
+  .chair-leg { width:8px; height:24px; bottom:0; background:#c7d0ff60; }
+  .chair-leg.l1 { left:10px; }
+  .chair-leg.l2 { left:42px; }
+
+  .person {
+    position:absolute;
+    left:46px;
+    bottom:34px;
+    width:58px;
+    height:80px;
+    transform-origin:center bottom;
+    animation: breath 3.2s ease-in-out infinite;
+  }
+
+  .head {
+    position:absolute;
+    left:15px;
+    top:0;
+    width:28px;
+    height:28px;
+    border-radius:50%;
+    background:linear-gradient(180deg, #ffe5c5, #f4cbab);
+  }
+
+  .face { position:relative; width:100%; height:100%; }
+  .eye {
+    position:absolute;
+    width:4px; height:4px;
+    border-radius:50%;
+    background:#31385f;
+    top:11px;
+  }
+  .eye.e1 { left:8px; }
+  .eye.e2 { right:8px; }
+  .mouth {
+    position:absolute;
+    left:10px;
+    top:17px;
+    width:8px;
+    height:4px;
+    border-bottom:2px solid #31385f;
+    border-radius:0 0 8px 8px;
+    opacity:.7;
+  }
+
+  .torso {
+    position:absolute;
+    left:16px;
+    top:24px;
+    width:26px;
+    height:28px;
+    border-radius:10px;
+    background:linear-gradient(180deg, var(--accent), #5e4ad5);
+  }
+
+  .arm, .leg {
+    position:absolute;
+    border-radius:10px;
+  }
+
+  .arm {
+    top:27px;
+    width:8px; height:28px;
+    background:#ffe5c5;
+  }
+
+  .arm.a1 { left:9px; transform:rotate(28deg); }
+  .arm.a2 { right:9px; transform:rotate(-28deg); }
+
+  .leg {
+    top:47px;
+    width:8px; height:30px;
+    background:#dbe5ff;
+  }
+
+  .leg.p1 { left:22px; transform:rotate(28deg); }
+  .leg.p2 { left:32px; transform:rotate(-16deg); }
+
+  .breath-ring {
+    position:absolute;
+    left:50%;
+    top:44%;
+    transform:translate(-50%, -50%);
+    width:52px; height:52px;
+    border-radius:50%;
+    border:2px solid rgba(121,255,177,.34);
+    animation:breatheRing 3.2s ease-in-out infinite;
+    pointer-events:none;
+  }
+
+  .breath-ring.ring2 { animation-delay:1.6s; }
+
+  .buddy-copy {
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    max-width:min(360px, 100%);
+  }
+
+  .buddy-text {
+    font-size:14px;
+    color:var(--muted);
+    font-weight:700;
+    text-align:center;
+  }
+
+  .buddy-reminder {
+    margin:0;
+    font-size:13px;
+    line-height:1.55;
+    color:var(--muted);
+    font-weight:500;
+    text-align:center;
+    opacity:0.92;
+  }
+
+  .timer-wrap {
+    display:grid;
+    place-items:center;
+    margin:18px 0 10px;
+  }
+
+  .ring {
+    width:220px;
+    height:220px;
+    position:relative;
+    display:grid;
+    place-items:center;
+  }
+
+  .progress-svg {
+    width:100%;
+    height:100%;
+    position:absolute;
+    inset:0;
+    transform:rotate(-90deg);
+  }
+
+  .track {
+    fill:none;
+    stroke:rgba(255,255,255,.08);
+    stroke-width:9;
+  }
+
+  .progress {
+    fill:none;
+    stroke:url(#gradStroke);
+    stroke-width:10;
+    stroke-linecap:round;
+    stroke-dasharray:326.73;
+    stroke-dashoffset:326.73;
+    transition:stroke-dashoffset .2s linear, filter 0.35s ease;
+    filter:drop-shadow(0 0 12px rgba(0,219,255,.18));
+  }
+
+  .progress.minute-ring-glow {
+    filter:drop-shadow(0 0 18px rgba(255,224,102,.95)) drop-shadow(0 0 10px rgba(0,219,255,.65));
+  }
+
+  .timer-wrap.minute-pulse {
+    animation:minutePulse .7s cubic-bezier(0.34,1.45,0.64,1);
+  }
+
+  body.finish-victory::after {
+    content:"";
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    z-index:25;
+    background:
+      radial-gradient(circle at 50% 42%, rgba(255,224,102,.48) 0%, transparent 52%),
+      radial-gradient(circle at 18% 78%, rgba(0,219,255,.3) 0%, transparent 44%),
+      radial-gradient(circle at 85% 70%, rgba(124,92,255,.35) 0%, transparent 50%);
+    mix-blend-mode:screen;
+    animation:finishVictoryWash 4s ease-out forwards;
+  }
+
+  body.finish-victory .ring {
+    animation:finishRingPulse 4s ease-in-out forwards;
+  }
+
+  body.finish-victory .time {
+    animation:finishTimeGlow 4s ease-in-out forwards;
+  }
+
+  @keyframes minutePulse {
+    0% { transform:scale(1); filter:brightness(1); }
+    35% { transform:scale(1.07); filter:brightness(1.2) saturate(1.12); }
+    100% { transform:scale(1); filter:brightness(1); }
+  }
+
+  @keyframes finishVictoryWash {
+    0% { opacity:0; transform:scale(0.92); }
+    14% { opacity:1; transform:scale(1.02); }
+    45% { opacity:.88; transform:scale(1); }
+    100% { opacity:0; transform:scale(1.1); }
+  }
+
+  @keyframes finishRingPulse {
+    0%, 100% { transform:scale(1); }
+    18% { transform:scale(1.1); }
+    38% { transform:scale(1.04); }
+    62% { transform:scale(1.12); }
+    82% { transform:scale(1.06); }
+  }
+
+  @keyframes finishTimeGlow {
+    0%, 100% { text-shadow:none; }
+    22% { text-shadow:0 0 28px rgba(255,224,102,.9), 0 0 52px rgba(0,219,255,.45); }
+    52% { text-shadow:0 0 38px rgba(255,224,102,.95); }
+    78% { text-shadow:0 0 22px rgba(121,255,177,.75); }
+  }
+
+  .time {
+    position:relative;
+    z-index:2;
+    font-size:42px;
+    font-weight:1000;
+    letter-spacing:.03em;
+  }
+
+  .status {
+    text-align:center;
+    font-size:16px;
+    font-weight:800;
+    min-height:24px;
+    margin-bottom:12px;
+  }
+
+  .button-row {
+    display:flex;
+    gap:12px;
+    margin-bottom:14px;
+  }
+
+  .btn {
+    appearance:none;
+    border:none;
+    border-radius:16px;
+    padding:14px 18px;
+    cursor:pointer;
+    font-size:15px;
+    font-weight:900;
+    transition:transform .12s ease, opacity .2s ease, box-shadow .2s ease;
+  }
+
+  .btn:active { transform:scale(.98); }
+
+  .btn.primary {
+    flex:1;
+    background:linear-gradient(135deg, var(--accent), var(--accent2));
+    color:white;
+    box-shadow:0 12px 28px rgba(124,92,255,.32);
+  }
+
+  .btn.ghost {
+    background:rgba(255,255,255,.08);
+    color:var(--text);
+    border:1px solid rgba(255,255,255,.1);
+  }
+
+  .btn[disabled] {
+    opacity:.55;
+    cursor:not-allowed;
+  }
+
+  .quote-box {
+    padding:14px 16px;
+    border-radius:18px;
+    background:rgba(255,255,255,.05);
+    border:1px solid rgba(255,255,255,.08);
+    color:var(--accent3);
+    font-weight:800;
+    text-align:center;
+    line-height:1.4;
+  }
+
+  .journal-list {
+    display:grid;
+    gap:10px;
+  }
+
+  .journal-item {
+    background:rgba(255,255,255,.05);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:16px;
+    padding:12px;
+  }
+
+  .journal-top {
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom:8px;
+    font-size:13px;
+    color:var(--muted);
+    font-weight:700;
+  }
+
+  .journal-main {
+    font-size:14px;
+    line-height:1.45;
+  }
+
+  .empty {
+    color:var(--muted);
+    font-size:14px;
+  }
+
+  .overlay {
+    position:fixed;
+    inset:0;
+    z-index:20;
+    background:rgba(7,11,24,.62);
+    display:grid;
+    place-items:center;
+    padding:18px;
+  }
+
+  .success-card {
+    width:min(100%, 560px);
+    background:rgba(22,28,56,.95);
+    border:1px solid rgba(255,255,255,.1);
+    border-radius:26px;
+    box-shadow:0 20px 70px rgba(0,0,0,.4);
+    padding:10px;
+    animation:popIn .45s ease;
+  }
+
+  .success-title {
+    font-size:clamp(36px, 8vw, 54px);
+    font-weight:1000;
+    text-align:center;
+    margin-bottom:10px;
+    line-height:1.05;
+    letter-spacing:-0.02em;
+    color:#fffdf6;
+    text-shadow:
+      0 0 24px rgba(255,224,102,.95),
+      0 0 48px rgba(0,219,255,.55),
+      0 0 72px rgba(124,92,255,.35),
+      0 3px 0 rgba(18,25,48,.45);
+  }
+
+  .success-sub {
+    text-align:center;
+    color:var(--accent3);
+    font-weight:800;
+    font-size:clamp(15px, 3.6vw, 17px);
+    margin-bottom:14px;
+    text-shadow:0 0 18px rgba(255,224,102,.4);
+  }
+
+  .capsule-wrap {
+    display:grid;
+    place-items:center;
+    margin: 6px 0 16px;
+  }
+
+  .capsule {
+    width:94px;
+    height:94px;
+    border-radius:50%;
+    display:grid;
+    place-items:center;
+    font-size:40px;
+    font-weight:1000;
+    color:white;
+    background:linear-gradient(135deg, var(--accent), var(--accent2));
+    box-shadow:0 0 0 6px rgba(255,255,255,.06), 0 18px 40px rgba(124,92,255,.32);
+    animation:capsuleBounce .8s ease-in-out infinite alternate;
+  }
+
+  .capsule.glow {
+    filter:drop-shadow(0 0 18px rgba(255,255,255,.16));
+  }
+
+  .reward-card {
+    padding:14px;
+    border-radius:18px;
+    background:rgba(255,255,255,.05);
+    border:1px solid rgba(255,255,255,.08);
+    text-align:center;
+    margin-bottom:14px;
+    animation:popIn .3s ease;
+  }
+
+  .reward-rarity {
+    font-size:12px;
+    font-weight:900;
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    color:var(--accent3);
+    margin-bottom:8px;
+  }
+
+  .reward-name {
+    font-size:28px;
+    font-weight:1000;
+    margin-bottom:6px;
+  }
+
+  .reward-desc {
+    color:var(--muted);
+    line-height:1.45;
+    font-weight:700;
+  }
+
+  .after-section {
+    margin-top:0;
+  }
+
+  .overlay-buttons {
+    margin-top:14px;
+    margin-bottom:0;
+  }
+
+  .hidden {
+    display:none !important;
+  }
+
+  #particles {
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    z-index:30;
+    overflow:hidden;
+  }
+
+  .particle {
+    position:absolute;
+    width:10px;
+    height:18px;
+    border-radius:4px;
+    animation:confetti 1600ms ease-out forwards;
+    will-change:transform, opacity;
+  }
+
+  .toast {
+    position:fixed;
+    left:50%;
+    bottom:28px;
+    transform:translateX(-50%);
+    z-index:35;
+    background:rgba(255,80,117,.95);
+    color:#fff;
+    font-weight:900;
+    padding:12px 16px;
+    border-radius:999px;
+    box-shadow:0 12px 28px rgba(255,80,117,.3);
+  }
+
+  @keyframes breath {
+    0%,100% { transform:translateY(0) scaleY(1); }
+    50% { transform:translateY(-2px) scaleY(1.03); }
+  }
+
+  @keyframes breathShadow {
+    0%,100% { transform:scaleX(1); opacity:.24; }
+    50% { transform:scaleX(1.08); opacity:.16; }
+  }
+
+  @keyframes breatheRing {
+    0% { transform:translate(-50%, -50%) scale(.8); opacity:0; }
+    20% { opacity:.42; }
+    100% { transform:translate(-50%, -50%) scale(1.7); opacity:0; }
+  }
+
+  @keyframes shake {
+    0%,100% { transform:translate(0,0); }
+    15% { transform:translate(-5px,2px); }
+    35% { transform:translate(5px,-2px); }
+    55% { transform:translate(-3px,-2px); }
+    75% { transform:translate(3px,2px); }
+  }
+
+  @keyframes popIn {
+    0% { transform:scale(.88); opacity:0; }
+    100% { transform:scale(1); opacity:1; }
+  }
+
+  @keyframes confetti {
+    0% {
+      transform:translate3d(0,0,0) rotate(0deg);
+      opacity:1;
+    }
+    100% {
+      transform:translate3d(var(--dx), var(--dy), 0) rotate(var(--rot));
+      opacity:0;
+    }
+  }
+
+  @keyframes capsuleBounce {
+    0% { transform:translateY(0) scale(1); }
+    100% { transform:translateY(-6px) scale(1.04); }
+  }
+
+  @media (max-width: 640px) {
+    .card, .success-card { padding:16px; border-radius:22px; }
+    .stats-grid, .row.two { grid-template-columns:1fr; }
+    .button-row { flex-direction:column; }
+    .ring { width:200px; height:200px; }
+    .time { font-size:36px; }
+  }
+</style>
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <linearGradient id="gradStroke" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7c5cff"></stop>
+      <stop offset="55%" stop-color="#00dbff"></stop>
+      <stop offset="100%" stop-color="#ffe066"></stop>
+    </linearGradient>
+  </defs>
+</svg>
+    <script  src="./script.js"></script>
+
+  </body>
+  
+</html>
