@@ -13,6 +13,7 @@ const BADGES = {
 const appState = {
   route: "home",
   currentScript: "hiragana",
+  learnDisplayMode: "overview",
   selectedRowId: null,
   reviewQueue: [],
   reviewIndex: 0,
@@ -113,6 +114,58 @@ function shouldShowMnemonic(kana) {
 
 function familiarityBar(level) {
   return `${"█".repeat(level)}${"░".repeat(5 - level)}`;
+}
+
+function pronunciationHint(romaji) {
+  const guide = {
+    a: "ah",
+    i: "ee",
+    u: "oo",
+    e: "eh",
+    o: "oh",
+    ka: "kah",
+    ki: "kee",
+    ku: "koo",
+    ke: "keh",
+    ko: "koh",
+    sa: "sah",
+    shi: "shee",
+    su: "soo",
+    se: "seh",
+    so: "soh",
+    ta: "tah",
+    chi: "chee",
+    tsu: "tsoo",
+    te: "teh",
+    to: "toh",
+    na: "nah",
+    ni: "nee",
+    nu: "noo",
+    ne: "neh",
+    no: "noh",
+    ha: "hah",
+    hi: "hee",
+    fu: "foo",
+    he: "heh",
+    ho: "hoh",
+    ma: "mah",
+    mi: "mee",
+    mu: "moo",
+    me: "meh",
+    mo: "moh",
+    ya: "yah",
+    yu: "yoo",
+    yo: "yoh",
+    ra: "rah",
+    ri: "ree",
+    ru: "roo",
+    re: "reh",
+    ro: "roh",
+    wa: "wah",
+    wo: "oh",
+    n: "n"
+  };
+  return guide[romaji] || romaji;
 }
 
 function averageLevel(script) {
@@ -332,7 +385,7 @@ function learnView(script) {
             ${row.label} • Avg familiarity ${avg.toFixed(1)}/5
           </button>
           <button class="secondary outline" data-action="open-flashcards" data-row="${row.id}" data-script="${script}">
-            Flashcards
+            Train Flash Cards
           </button>
         </div>
       `;
@@ -340,8 +393,24 @@ function learnView(script) {
     .join("");
 
   const selected = rows.find((r) => r.id === appState.selectedRowId) || rows[0];
+  const isClassicGrid = appState.learnDisplayMode === "classic";
 
-  const cards = selected.chars
+  const rowProgress = selected.chars
+    .map((c) => {
+      const level = progress[c.kana]?.level || 0;
+      return `
+        <div class="bar-item">
+          <span class="kana">${c.kana}</span>
+          <strong>${c.romaji}</strong>
+          <div class="muted">Pronounce: ${pronunciationHint(c.romaji)}</div>
+          <div class="muted">Level ${level}: ${MASTERY_LABELS[level]}</div>
+          <div>${familiarityBar(level)}</div>
+        </div>
+      `;
+    })
+    .join("");
+
+  const classicCards = selected.chars
     .map((c) => {
       const level = progress[c.kana]?.level || 0;
       const showMnemonic = shouldShowMnemonic(c.kana);
@@ -349,6 +418,7 @@ function learnView(script) {
         <article class="kana-card">
           <h4>${c.kana}</h4>
           <p><strong>${c.romaji}</strong></p>
+          <p class="muted">Pronounce: ${pronunciationHint(c.romaji)}</p>
           <p class="muted">Level ${level}: ${MASTERY_LABELS[level]}</p>
           <p>${c.kana} ${familiarityBar(level)}</p>
           ${showMnemonic ? `<small>${c.mnemonic}</small>` : "<small class='muted'>Mnemonic hidden after repeated correct answers.</small>"}
@@ -364,10 +434,20 @@ function learnView(script) {
   return `
     <article>
       <h2>${script === "hiragana" ? "Learn Hiragana" : "Learn Katakana"}</h2>
-      <p>Use mnemonics as training wheels, then fade them as recall improves.</p>
+      <p>Choose a row, then launch focused training. Progress still updates per kana.</p>
       <div class="row-buttons">${rowButtons}</div>
-      <h3>${selected.label}</h3>
-      <div class="cards-grid">${cards}</div>
+      <div class="grid">
+        <button class="${isClassicGrid ? "secondary" : ""}" data-action="set-learn-mode" data-mode="overview">Overview Mode</button>
+        <button class="${isClassicGrid ? "" : "secondary"}" data-action="set-learn-mode" data-mode="classic">Classic Grid Mode</button>
+      </div>
+      <h3>${selected.label} Overview</h3>
+      <p class="muted">Training mode is one-card-at-a-time and prioritizes weak cards.</p>
+      <div class="grid">
+        <button data-action="open-flashcards" data-row="${selected.id}" data-script="${script}">
+          Train Flash Cards
+        </button>
+      </div>
+      ${isClassicGrid ? `<div class="cards-grid">${classicCards}</div>` : `<div class="bars-grid">${rowProgress}</div>`}
     </article>
   `;
 }
@@ -383,22 +463,33 @@ function flashcardsView() {
   }
 
   const session = appState.flashcards;
-  const card = session.cards[session.index];
+  const card = session.currentCard;
+  if (!card) {
+    return `
+      <article>
+        <h2>Row Flashcards</h2>
+        <p>No cards available for this row right now.</p>
+      </article>
+    `;
+  }
   const progress = getProgress();
   const level = progress[card.kana]?.level || 0;
   const showBack = session.showBack;
   const scriptLabel = session.script === "hiragana" ? "Hiragana" : "Katakana";
+  const totalAnswers = session.correct + session.incorrect;
+  const accuracy = totalAnswers > 0 ? Math.round((session.correct / totalAnswers) * 100) : 0;
 
   return `
     <article>
       <h2>${scriptLabel} Flashcards: ${session.rowLabel}</h2>
-      <p class="counter">Card ${session.index + 1} / ${session.cards.length}</p>
+      <p class="counter">Trained: ${totalAnswers} • Accuracy: ${accuracy}% • Prioritizing weak cards</p>
       <div class="quiz-card">
         <div class="quiz-kana">${card.kana}</div>
         ${
           showBack
             ? `
           <p><strong>${card.romaji}</strong></p>
+          <p class="muted">Pronounce: ${pronunciationHint(card.romaji)} (audio coming soon)</p>
           <p class="muted">Level ${level}: ${MASTERY_LABELS[level]}</p>
           <p>${shouldShowMnemonic(card.kana) ? card.mnemonic : "Mnemonic hidden (you are recalling well)."}</p>
           <div class="grid">
@@ -413,8 +504,8 @@ function flashcardsView() {
         }
       </div>
       <div class="grid">
-        <button class="secondary" data-action="flashcard-prev">Previous</button>
-        <button class="secondary" data-action="flashcard-next">Next</button>
+        <button class="secondary" data-action="flashcard-skip">Skip</button>
+        <button class="secondary outline" data-action="flashcard-restart">Restart row deck</button>
       </div>
     </article>
   `;
@@ -643,6 +734,74 @@ function buildWeakQueue() {
     .map((k) => ({ ...k, level: progress[k.kana]?.level || 0 }))
     .sort((a, b) => a.level - b.level)
     .slice(0, 20);
+}
+
+function flashcardWeightForKana(kana, sessionProgress = {}) {
+  const globalProgress = getProgress();
+  const progress = globalProgress[kana] || defaultProgressEntry();
+  const levelPenalty = 1 + (5 - progress.level) * 2;
+  const missPenalty = (progress.incorrectCount || 0) * 0.25;
+  const streakDiscount = Math.min(progress.correctStreak || 0, 4) * 0.25;
+  const localMissPenalty = (sessionProgress[kana]?.misses || 0) * 1.5;
+  const now = Date.now();
+  const dueBoost = progress.nextReviewAt && progress.nextReviewAt <= now ? 2 : 0;
+  return Math.max(0.4, levelPenalty + missPenalty + localMissPenalty + dueBoost - streakDiscount);
+}
+
+function pickWeightedFlashcard(cards, sessionProgress = {}, lastKana = null) {
+  if (!cards.length) return null;
+  const pool = cards.map((card) => ({
+    card,
+    weight: flashcardWeightForKana(card.kana, sessionProgress)
+  }));
+  const viable = pool.filter((entry) => cards.length === 1 || entry.card.kana !== lastKana);
+  const source = viable.length ? viable : pool;
+  const totalWeight = source.reduce((sum, entry) => sum + entry.weight, 0);
+  let random = Math.random() * totalWeight;
+  for (let index = 0; index < source.length; index += 1) {
+    random -= source[index].weight;
+    if (random <= 0) return source[index].card;
+  }
+  return source[source.length - 1].card;
+}
+
+function initializeFlashcardSession(script, row) {
+  const shuffledCards = shuffle(row.chars.map((char) => ({ ...char })));
+  return {
+    script,
+    rowId: row.id,
+    rowLabel: row.label,
+    cards: shuffledCards,
+    currentCard: pickWeightedFlashcard(shuffledCards),
+    showBack: false,
+    correct: 0,
+    incorrect: 0,
+    perKana: {},
+    lastKana: null
+  };
+}
+
+function advanceFlashcard({ markCorrect = null } = {}) {
+  const session = appState.flashcards;
+  if (!session || !session.currentCard) return;
+  const kana = session.currentCard.kana;
+  if (!session.perKana[kana]) {
+    session.perKana[kana] = { seen: 0, misses: 0 };
+  }
+  session.perKana[kana].seen += 1;
+
+  if (markCorrect === true) {
+    session.correct += 1;
+    updateProgressForAnswer(kana, true);
+  } else if (markCorrect === false) {
+    session.incorrect += 1;
+    session.perKana[kana].misses += 1;
+    updateProgressForAnswer(kana, false);
+  }
+
+  session.lastKana = kana;
+  session.currentCard = pickWeightedFlashcard(session.cards, session.perKana, session.lastKana);
+  session.showBack = false;
 }
 
 function buildRomajiOptions(correct) {
@@ -932,19 +1091,20 @@ document.addEventListener("click", (event) => {
     const script = target.getAttribute("data-script");
     const row = KANA_ROWS[script].find((r) => r.id === rowId);
     if (row) {
-      appState.flashcards = {
-        script,
-        rowId,
-        rowLabel: row.label,
-        cards: shuffle(row.chars.map((c) => ({ ...c }))),
-        index: 0,
-        showBack: false
-      };
+      appState.flashcards = initializeFlashcardSession(script, row);
       navigate("flashcards");
     }
   }
 
-  if (target.matches("[data-row]")) {
+  if (target.matches("[data-action='set-learn-mode']")) {
+    const mode = target.getAttribute("data-mode");
+    if (mode === "overview" || mode === "classic") {
+      appState.learnDisplayMode = mode;
+      render();
+    }
+  }
+
+  if (target.matches("[data-row]") && !target.matches("[data-action='open-flashcards']")) {
     appState.selectedRowId = target.getAttribute("data-row");
     const script = target.getAttribute("data-script");
     navigate(script === "hiragana" ? "learnHiragana" : "learnKatakana");
@@ -957,41 +1117,34 @@ document.addEventListener("click", (event) => {
     }
   }
 
-  if (target.matches("[data-action='flashcard-next']")) {
+  if (target.matches("[data-action='flashcard-skip']")) {
     if (appState.flashcards) {
-      appState.flashcards.index = (appState.flashcards.index + 1) % appState.flashcards.cards.length;
-      appState.flashcards.showBack = false;
+      advanceFlashcard();
       render();
     }
   }
 
-  if (target.matches("[data-action='flashcard-prev']")) {
+  if (target.matches("[data-action='flashcard-restart']")) {
     if (appState.flashcards) {
-      const size = appState.flashcards.cards.length;
-      appState.flashcards.index = (appState.flashcards.index - 1 + size) % size;
-      appState.flashcards.showBack = false;
+      const session = appState.flashcards;
+      const row = KANA_ROWS[session.script].find((r) => r.id === session.rowId);
+      if (row) {
+        appState.flashcards = initializeFlashcardSession(session.script, row);
+      }
       render();
     }
   }
 
   if (target.matches("[data-action='flashcard-easy']")) {
-    const kana = target.getAttribute("data-kana");
-    updateProgressForAnswer(kana, true);
     if (appState.flashcards) {
-      appState.flashcards.index = (appState.flashcards.index + 1) % appState.flashcards.cards.length;
-      appState.flashcards.showBack = false;
+      advanceFlashcard({ markCorrect: true });
     }
     render();
   }
 
   if (target.matches("[data-action='flashcard-hard']")) {
-    const kana = target.getAttribute("data-kana");
-    updateProgressForAnswer(kana, false);
     if (appState.flashcards) {
-      const current = appState.flashcards.cards[appState.flashcards.index];
-      appState.flashcards.cards.push(current);
-      appState.flashcards.index = (appState.flashcards.index + 1) % appState.flashcards.cards.length;
-      appState.flashcards.showBack = false;
+      advanceFlashcard({ markCorrect: false });
     }
     render();
   }
